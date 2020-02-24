@@ -1,27 +1,25 @@
 CLASSES = {
-  0: 'class0',
-  1: 'class1',
-  2: 'class2',
-  3: 'class3',
-  4: 'class4',
+  1: 'Alma Mater',
+  2: 'Lion',
+  3: 'Law',
 };
 
 const MODEL_PATH =
     'model.json';
 
 const IMAGE_SIZE = 192;
-const TOPK_PREDICTIONS = 5;
+const TOPK_PREDICTIONS = 3;
 
-let my_model;
+let my_model_landmarks;
 const demo = async () => {
   status('Loading model...');
 
-  my_model = await tf.loadLayersModel(MODEL_PATH);
+  my_model_landmarks = await tf.loadLayersModel(MODEL_PATH);
 
   // Warmup the model. This isn't necessary, but makes the first prediction
   // faster. Call `dispose` to release the WebGL memory allocated for the return
   // value of `predict`.
-  my_model.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3])).dispose();
+  my_model_landmarks.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3])).dispose();
 
   status('');
 
@@ -67,7 +65,7 @@ async function predict(imgElement) {
 
     startTime2 = performance.now();
     // Make a prediction through my_model.
-    return my_model.predict(batched);
+    return my_model_landmarks.predict(batched);
   });
 
   // Convert logits to probabilities and class names.
