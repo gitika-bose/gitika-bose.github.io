@@ -1,7 +1,7 @@
 CLASSES = {
-  1: 'Alma Mater',
+  0: 'Alma Mater',
+  1: 'Law',
   2: 'Lion',
-  3: 'Law',
 };
 
 const MODEL_PATH =
@@ -23,15 +23,15 @@ const demo = async () => {
 
   status('');
 
-  // Make a prediction through the locally hosted cat.jpg.
-  const catElement = document.getElementById('cat');
-  if (catElement.complete && catElement.naturalHeight !== 0) {
-    predict(catElement);
-    catElement.style.display = '';
+  // Make a prediction through the locally hosted alma.jpg.
+  const almaElement = document.getElementById('alma');
+  if (almaElement.complete && almaElement.naturalHeight !== 0) {
+    predict(almaElement);
+    almaElement.style.display = '';
   } else {
-    catElement.onload = () => {
-      predict(catElement);
-      catElement.style.display = '';
+    almaElement.onload = () => {
+      predict(almaElement);
+      almaElement.style.display = '';
     }
   }
 
