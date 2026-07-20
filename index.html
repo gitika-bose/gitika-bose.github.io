@@ -1,66 +1,162 @@
 <!doctype html>
-
+<html lang="en">
 <head>
-  <title>Your title</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gitika Bose</title>
+  <meta name="description" content="Gitika Bose — software engineer building AI systems for healthcare. Projects and writing on LLM pipelines, evals, and reliability.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
-
-<style>
-  .pred-container {
-    margin-bottom: 20px;
-  }
-
-  .pred-container > div {
-    display: inline-block;
-    margin-right: 20px;
-    vertical-align: top;
-  }
-
-  .row {
-    display: table-row;
-  }
-  .cell {
-    display: table-cell;
-    padding-right: 20px;
-  }
-
-  #file-container {
-    margin-bottom: 20px;
-  }
-</style>
-
 <body>
-  <div class="tfjs-example-container">
-    <section class='title-area'>
-      <h1>TensorFlow.js: Using a Keras model in the browser</h1>
-    </section>
 
-    <section>
-      <p class='section-head'>Description</p>
+  <header class="hero wrap">
+    <div class="hero-row">
+      <img class="avatar" src="https://github.com/gitika-bose.png" alt="Gitika Bose">
+      <div>
+        <h1>Gitika Bose</h1>
+        <p class="tagline">Software engineer building <span class="hl">AI systems for healthcare</span> — and the evals that keep them honest.</p>
+      </div>
+    </div>
+    <div class="hero-links">
+      <a class="pill" href="https://github.com/gitika-bose">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        GitHub
+      </a>
+      <a class="pill" href="mailto:gitika.bose@gmail.com">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555ZM0 4.697v7.104l5.803-3.558L0 4.697ZM6.761 8.83l-6.57 4.026A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.026L8 9.586l-1.239-.757Zm3.436-.586L16 11.801V4.697l-5.803 3.546Z"/></svg>
+        Email
+      </a>
+      <a class="pill" href="#writing">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10ZM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5Zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5Zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325Z"/></svg>
+        Writing
+      </a>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section class="about" id="about">
+      <p class="eyebrow">About</p>
       <p>
-        This file is based on <a>https://github.com/tensorflow/tfjs-examples/tree/master/mobilenet</a>.
+        I build software where correctness actually matters — most recently AI pipelines that
+        turn dense clinical notes into care plans patients can understand and act on.
+        Along the way I've become a little obsessed with the question behind the question:
+        how do you <em>know</em> a generative system is good? That's led me deep into
+        eval design, LLM-as-judge calibration, and the role domain experts play in defining quality.
+      </p>
+      <p>
+        Before healthcare AI, my projects ranged from fake-news intent detection research
+        to flood prediction from news archives — the common thread is language, messy data,
+        and systems people need to trust.
       </p>
     </section>
 
-    <section>
-      <p class='section-head'>Status</p>
-      <div id="status"></div>
-    </section>
+    <section id="projects">
+      <p class="eyebrow">Projects</p>
+      <h2>Selected work</h2>
+      <div class="grid">
 
-    <section>
-      <p class='section-head'>Model Output</p>
+        <div class="card flagship">
+          <div class="card-top">
+            <h3>Juno — Medical Clarity</h3>
+            <span class="tag">Flagship · In development</span>
+          </div>
+          <p>
+            An AI pipeline that transforms clinical appointment notes into plain-language care plans —
+            deterministic medical-term detection, staged LLM simplification, structured output with
+            glossaries, warning signs, and follow-ups. Built on Flask, React, and Vertex AI within a
+            HIPAA-compliant boundary. I'm currently designing its eval system:
+            contract graders, seeded-defect experiments, and expert calibration
+            (<a href="blog/evals-and-domain-expertise.html">read the write-up →</a>).
+          </p>
+          <div class="card-meta"><span class="dot">Python · TypeScript · GCP</span><span>2025–2026</span></div>
+        </div>
 
-      <div id="file-container" style="display: none">
-        Upload an image: <input type="file" id="files" name="files[]" multiple />
+        <a class="card" href="https://github.com/gitika-bose/medical-scribe">
+          <div class="card-top">
+            <h3>Medical Scribe</h3>
+            <span class="tag warm">Healthcare</span>
+          </div>
+          <p>A personal medical scribe and helper bot to improve a patient's hospital journey — capturing what happens so patients don't have to.</p>
+          <div class="card-meta"><span class="dot">TypeScript</span><span>2026</span></div>
+        </a>
+
+        <a class="card" href="https://github.com/gitika-bose/health-tracker-agent">
+          <div class="card-top">
+            <h3>Health Tracker Agent</h3>
+            <span class="tag warm">Healthcare</span>
+          </div>
+          <p>An agent-based approach to personal health tracking.</p>
+          <div class="card-meta"><span class="dot">C#</span><span>2025</span></div>
+        </a>
+
+        <a class="card" href="https://github.com/gitika-bose/SemaFor-Research-">
+          <div class="card-top">
+            <h3>SemaFor Research</h3>
+            <span class="tag">Research</span>
+          </div>
+          <p>Identifying fake news — and the intent behind it — for specific topic domains.</p>
+          <div class="card-meta"><span class="dot">Python · NLP</span><span>2020</span></div>
+        </a>
+
+        <a class="card" href="https://github.com/gitika-bose/ResearchSpring2019">
+          <div class="card-top">
+            <h3>Prescription &amp; Pill Identification</h3>
+            <span class="tag">Research</span>
+          </div>
+          <p>Research on identifying prescriptions and pills — an early step toward safer medication handling.</p>
+          <div class="card-meta"><span class="dot">Python · Vision</span><span>2019</span></div>
+        </a>
+
+        <a class="card" href="https://github.com/gitika-bose/bangladesh-flood-timeline">
+          <div class="card-top">
+            <h3>Bangladesh Flood Timeline</h3>
+            <span class="tag">Research</span>
+          </div>
+          <p>Predicting the nature and timing of floods from news article archives.</p>
+          <div class="card-meta"><span class="dot">Python · NLP</span><span>2020</span></div>
+        </a>
+
+        <a class="card" href="https://github.com/gitika-bose/Fictional-Character-Bot">
+          <div class="card-top">
+            <h3>Fictional Character Bot</h3>
+            <span class="tag">For fun</span>
+          </div>
+          <p>A chat bot with fictional-character personalities. Yes, you can talk to Tanjiro.</p>
+          <div class="card-meta"><span class="dot">Python</span><span>2024</span></div>
+        </a>
+
       </div>
-
-      <div id="predictions"></div>
-
-      <img style="display: none" id="alma" src="alma.jpg" width=192 height=192 />
+      <p class="more-link"><a href="https://github.com/gitika-bose?tab=repositories">All projects on GitHub →</a></p>
     </section>
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.0.0/dist/tf.min.js"></script>
-    <script src="index.js"></script>
-  </div>
+    <section id="writing">
+      <p class="eyebrow">Writing</p>
+      <h2>Blog</h2>
+      <a class="post" href="blog/evals-and-domain-expertise.html">
+        <span class="date">July 2026</span>
+        <h3>The Role of Domain Expertise in AI Eval Design</h3>
+        <p>
+          Readability metrics said our medical summaries were "patient-friendly." A seeded-defect
+          experiment showed one of them had silently dropped the prescribed antibiotic.
+          On evals as the real quality bar of generative AI — and why domain experts,
+          not engineers, are the authors of "good."
+        </p>
+      </a>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="wrap">
+      © 2026 Gitika Bose · Built by hand, no framework needed ·
+      <a href="https://github.com/gitika-bose/gitika-bose.github.io">source</a>
+    </div>
+  </footer>
+
 </body>
+</html>

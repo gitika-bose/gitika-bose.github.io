@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Role of Domain Expertise in AI Eval Design — Gitika Bose</title>
+  <meta name="description" content="Evals are the real quality bar of generative AI systems — and domain experts, not engineers, are the authors of 'good.' A case study in medical note simplification, with a seeded-defect experiment.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+<div class="wrap">
+<article class="blog">
+
+  <a class="backlink" href="../index.html">← gitika bose</a>
+
+  <h1>The Role of Domain Expertise in AI Eval Design</h1>
+  <p class="subtitle">A case study in medical note simplification</p>
+  <p class="byline">Gitika Bose · July 2026</p>
+
+  <p>A patient-facing summary of a doctor's note can score above 90 on standard readability metrics while containing a medication the doctor never prescribed. Nothing in a Flesch-Kincaid grade level, a SMOG index, or a sentence-complexity heuristic will notice. The text is short, active, and plainly worded — it is simply wrong.</p>
+
+  <p>This is not a hypothetical. Our team builds Juno, a system that takes clinical appointment notes and turns them into simplified care plans a patient can act on. Our first quality measure was a composite readability score: seven weighted dimensions (grade level, jargon density, sentence complexity, passive voice, and so on) rolled into a 0–100 "patient accessibility score," built to approximate validated health-literacy instruments — SMOG, Flesch-Kincaid, Dale-Chall, PEMAT. As a measure of the <em>simplification process</em>, it is scientifically grounded and it earns its place. But it measures how well the text reads, not whether the text is true — so it is structurally incapable of catching the failure that matters most: output that reads beautifully and misstates the care plan.</p>
+
+  <p>Closing that gap meant building evals, and building evals forced a realization that I think generalizes well beyond medicine: <strong>the hard part of evaluating a generative AI system is not the engineering. It is deciding what "good" means, and that definition lives with domain experts.</strong> This post walks through where expert knowledge enters eval design, using our system as the case study and grounding the human side in a recent ethnographic study of exactly this process — Szymanski, Anuyah, Li, and Metoyer's <em>"Key Considerations for Domain Expert Involvement in LLM Design and Evaluation"</em> (IUI '26, <a href="https://arxiv.org/abs/2602.14357">arXiv:2602.14357</a>).</p>
+
+  <h2>What an eval is, briefly</h2>
+
+  <p>An eval is a repeatable test of an AI system: a set of <strong>tasks</strong> (realistic inputs paired with expectations), <strong>graders</strong> (checks that score the output — deterministic code, an LLM acting as a judge, or a human), and <strong>trials</strong> (multiple runs per task, because generative systems are non-deterministic). The output is not a demo or an impression; it is a scorecard you can re-run after every change.</p>
+
+  <p>This matters because without evals, quality claims about a generative system are unfalsifiable. A model swap, a prompt tweak, a new retrieval source — each one either regressed something or it didn't, and spot-checking three outputs will not tell you which. The eval suite is, in effect, the executable specification of the product: it is the only place where "what this system is supposed to do" is written down precisely enough to be checked. A generative AI system's quality ceiling is set by the quality of its evals, because you can only reliably improve what you measure.</p>
+
+  <h2>The uncomfortable part: someone has to define "good"</h2>
+
+  <p>The eval harness — the runner, the task files, the report — is straightforward software. A competent engineer can build it in days. What the harness cannot supply is the content of the graders: which failures are disqualifying, which are tolerable, what a correct output even looks like for a given input.</p>
+
+  <p>For a general-purpose task, engineers can often approximate this themselves. For a professional domain, they cannot, and the failure mode is subtle: the team measures what is <em>easy to formalize</em> rather than everything that <em>matters</em>. Readability metrics are the instructive example in our domain — validated, quantitative, and the right tool for the dimension they measure: whether a patient can read the text. What they cannot supply is clinical judgment — whether the content is faithful to the note, complete on actions, and safe. An eval suite assembled without domain expertise tends to stop at the first kind of metric: precise and automated on one dimension, silent on the dimensions that carry the risk. The goal is not to replace the readability science but to surround it — add the domain-backed checks that catch false positives and hallucinations, so a high score means <em>both</em> readable and right.</p>
+
+  <p>The Szymanski et al. study observed this from the inside. The authors embedded with a three-person team building a pedagogy-advice chatbot over twelve weeks, alongside roughly twenty pedagogical consultants. The team's central evaluation work was not writing code; it was a series of participatory workshops in which the experts co-developed the evaluation criteria that an LLM judge would later apply — reviewing draft criteria, comparing outputs against automated scores, and revising the rubric language until it captured what they actually meant by a good teaching suggestion. The evaluation infrastructure was secondary; the expertise transfer was the project.</p>
+
+  <h2>Four roles domain experts play in eval design</h2>
+
+  <p>Working through our own design and reading the study side by side, expert involvement sorts into four distinct roles. They differ in how much expert time they consume and how replaceable that time is.</p>
+
+  <p><strong>1. Contract authors: setting risk tiers and tolerances.</strong> Before any grader is written, someone must rank the failure modes and assign tolerances. In our design this is a small table: leaked patient identifiers and fabricated clinical content are zero-tolerance (a single failure blocks release); dropped follow-up actions are near-zero; style and readability violations are thresholded. That table looks like an engineering artifact, but every row is a clinical judgment. Deciding that an invented urgency ("go to the ER if...") is categorically worse than an awkward sentence is not something an engineering team should decide by intuition — it is a statement about patient harm. Experts spend little time here, but nothing downstream is sound without it.</p>
+
+  <p><strong>2. Data creators: gold references and realistic inputs.</strong> Some qualities can only be checked against an expert-authored reference. Our graders mostly work <em>reference-free</em> — they check the output against the source note (are all numbers traceable? are required sections present?) because simplification admits many valid phrasings and diffing against one gold answer punishes acceptable variation. But a reference-free check cannot tell you whether the output <em>selected and emphasized</em> what an expert would have: whether the critical warning sign was foregrounded and the trivial one demoted. For that we maintain a small expert-written gold set (~10 notes) and compare candidate outputs to references on content selection, never wording.</p>
+
+  <p>The ethnographic study is a useful caution about how expensive this role is in practice. The observed team first tried to record real expert consultations (abandoned over privacy and consent concerns), then staged conversations (too few participants, transcripts too messy), and finally built a text simulator through which eighteen compensated experts produced 130 dialogues — which still wasn't enough, so the team generated a thousand synthetic dialogues patterned on the real ones. Expert-generated data is the scarcest resource in the whole pipeline; the design lesson is to spend it only where nothing cheaper works, and to use synthetic data deliberately to stretch it.</p>
+
+  <p><strong>3. Judge calibrators: making automated evaluation trustworthy.</strong> LLM-as-judge graders are the only practical way to check open-ended properties at scale — in our case, whether every claim in the output is grounded in the source note, and whether any advice was invented. But an uncalibrated judge is just a second opinion from a model with no medical training. Both our design and the study converge on the same mechanism: the judge earns authority only by agreeing with expert labels. We require ≥0.8 agreement with a human-labeled set before a judge's verdict can block a release, and re-calibrate whenever the judge's prompt or model changes. The study's workshop format adds an important refinement: the experts' job is not to grade outputs one by one (they found that tedious, and it doesn't scale) but to <em>refine the criteria</em> the judge applies — a higher-leverage use of the same hours.</p>
+
+  <p><strong>4. Arbiters of proxies: keeping the metrics honest.</strong> Every automated metric is a proxy for a human judgment. Our end goal is patient adherence — patients following the care plan because they understood it — and no readability formula measures understanding. So the design includes a small comprehension panel: lay readers receive only the Juno output and answer teach-back questions (<em>which medications, when, which symptoms mean call the doctor?</em>), scored against the source note, with clinicians spot-checking accuracy. The panel is small and runs at milestones, not per-commit. Its purpose is arbitration: if the automated composite says outputs are improving and comprehension scores say otherwise, the humans are right and the metric gets fixed. Without this role, teams inevitably begin optimizing the proxy.</p>
+
+  <h2>Measuring the blind spot: a seeded-defect experiment</h2>
+
+  <p>A claim like "readability metrics cannot see clinical failures" should itself be tested. So before publishing this post we ran the smallest experiment that could falsify it, using the seeded-defect harness in Juno's eval suite. We ran the production pipeline on five mock GP consultation notes from the public <a href="https://github.com/babylonhealth/primock57">PriMock57</a> dataset, then planted exactly one defect per variant into copies of each clean output: a dose multiplied by ten (200mg → 2000mg), an invented antibiotic, a dropped follow-up, urgency downgraded to "keep an eye on this at home," fabricated advice written without numbers, and a leaked patient name — 24 defective variants in total. Every variant was rendered to patient-facing text by the same deterministic renderer and scored two ways: the readability composite, and the contract graders from the eval design.</p>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr><th>Defect planted</th><th>Variants</th><th>Caught by contract graders</th><th>Mean readability change</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Dose ×10</td><td>2</td><td>2/2</td><td>+0.0</td></tr>
+        <tr><td>Invented medication</td><td>5</td><td>5/5</td><td>+0.6</td></tr>
+        <tr><td>Dropped follow-up</td><td>2</td><td>1/2</td><td>−1.5</td></tr>
+        <tr><td>Urgency downgraded</td><td>5</td><td>4/5</td><td>+1.8</td></tr>
+        <tr><td>Invented advice (number-free)</td><td>5</td><td>0/5</td><td><strong>+2.4</strong></td></tr>
+        <tr><td>Patient name leaked</td><td>5</td><td>5/5</td><td>−0.2</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Three results, in order of importance:</p>
+
+  <p><strong>The composite is blind to these defects — by scope, not by flaw.</strong> Across all 24 defective variants the readability score never moved more than 5 points, with no consistent direction — and planting fabricated advice <em>raised</em> the average score by 2.4 points, because "Take an aspirin every day until you feel better" is short, active, and imperative. Nothing in the composite's design claims to verify correctness; the experiment measures what happens when a single-dimension metric is the only gate between the pipeline and the patient.</p>
+
+  <p><strong>The contract graders caught 17 of 24 — deterministically.</strong> Every altered dose, every invented medication, every leaked name, four of five urgency downgrades. No LLM judge involved yet; these are regex-and-rules checks derived from the pipeline's own prompt contract. The misses are as instructive as the catches: the number-free invented advice evaded all six graders (0/5), which is precisely the designed case for the LLM-judge tier, and the remaining two misses traced to task-spec granularity — one note's urgency floor was set too low to register the downgrade, and one deleted follow-up was masked because the same words appeared in the summary. Grader quality is spec quality; specs are expert work.</p>
+
+  <p><strong>The graders found a real failure we didn't plant.</strong> On the <em>clean</em> outputs — before any seeding — the anchors grader flagged that one care plan had dropped the prescribed antibiotic entirely: the source note ordered a 3-day nitrofurantoin course, and the patient-facing output said only to monitor symptoms and call if they worsen. That output's readability score was 73 — "patient-friendly." A patient following this beautifully readable care plan would not take their antibiotic. On a five-note sample, run once, the contract graders surfaced exactly the class of failure this whole design exists to catch and the incumbent metric cannot see.</p>
+
+  <h2>What the ethnography adds: expertise is a socio-technical resource</h2>
+
+  <p>Most eval writing treats expert input as a dataset to be acquired. The Szymanski et al. study's contribution is documenting that it is a <em>relationship</em> to be maintained, with failure modes of its own:</p>
+
+  <ul>
+    <li><strong>Fatigue and motivation.</strong> Repetitive labeling burned experts out; they stayed engaged when they could see their contribution mattering, and disengaged when the work felt like data entry. One implication we've adopted: route expert time to calibration and criteria design, and let deterministic graders and LLM judges absorb the repetitive volume.</li>
+    <li><strong>AI literacy is a prerequisite, not a nice-to-have.</strong> The observed experts initially struggled to hold the frame — "the LLM was evaluating the chatbot, and we were evaluating the criteria," as one participant put it. Experts asked for criteria in advance and real-time feedback showing how a rubric change moved automated scores. Structured onboarding to <em>how their knowledge gets operationalized</em> materially changed the quality of what they contributed.</li>
+    <li><strong>Ownership and consent.</strong> Experts voiced real anxiety about encoding their professional judgment into a system — "I'm giving it all my tips and tricks" — without clarity on how it would be used. The authors recommend explicit data-governance terms, ongoing review checkpoints, and recognition (credit, compensation, shared authorship) proportional to the long-term value of the contribution. For teams in regulated domains this is not just ethics; unresolved ownership questions end expert relationships.</li>
+  </ul>
+
+  <p>The common thread: the experts in a well-designed eval process are co-designers of the quality bar, not annotation labor. Structuring the engagement that way is what makes the four roles above sustainable.</p>
+
+  <h2>This generalizes</h2>
+
+  <p>Nothing in the pattern is specific to medicine. Swap the clinician for a lawyer, an actuary, a pedagogical consultant, an aircraft-maintenance engineer:</p>
+
+  <ul>
+    <li>The <strong>risk-tier table</strong> becomes which errors are malpractice versus style.</li>
+    <li>The <strong>gold set</strong> becomes contracts or lesson plans an expert would actually sign.</li>
+    <li><strong>Judge calibration</strong> becomes the domain's reviewers agreeing with the automated reviewer often enough to trust it.</li>
+    <li>The <strong>proxy arbiter</strong> becomes whatever the real-world outcome is — cases won, students who learned, patients who adhered — checked by humans against the numbers the dashboard reports.</li>
+  </ul>
+
+  <p>The general claim is modest but consequential: an eval suite built without domain expertise measures what is easy, and an eval suite built with it measures what matters. Since the eval suite is the de facto specification of a generative AI product — the only precise, executable statement of what the system must and must not do — the experts who shape it are not consultants to the quality process. They are its authors.</p>
+
+  <h2>What comes next</h2>
+
+  <p>The seeded-defect experiment was the first slice of the design turned on, and it already produced a repair list: a dropped antibiotic, a four-sentence summary that violates the structure contract, three of five outputs with empty follow-up sections. The natural next step is to close the loop those findings open: build out the full Phase 1 suite, then use it to drive a round of eval-based tuning — changing prompts, models, and pipeline steps with the eval as the arbiter of whether each change actually helped, and the zero-tolerance tiers as the constraint no improvement is allowed to violate.</p>
+
+  <p>The end state this builds toward is a two-layer guarantee. The readability science keeps doing what it is validated to do — ensuring that what reaches a patient can be understood — while a set of high-accuracy, expert-calibrated graders acts as the release gate in front of it: no summary with a detectable error — a fabricated dose, a dropped medication, a softened warning — is shown to a patient. For a product whose entire value is patients acting correctly on what they read, that gate is not an enhancement; it is the requirement. That is the subject of the next post.</p>
+
+  <hr class="divider">
+
+  <p class="footnote"><em>The ethnographic study discussed is Szymanski, A., Anuyah, O., Li, T. J.-J., &amp; Metoyer, R. A., "Key Considerations for Domain Expert Involvement in LLM Design and Evaluation: An Ethnographic Study," IUI '26, <a href="https://arxiv.org/abs/2602.14357">arXiv:2602.14357</a>. Mock consultation notes from <a href="https://github.com/babylonhealth/primock57">PriMock57</a> (Korfiatis et al., Babylon Health) — clinician-written mock consultations containing no real patient data.</em></p>
+
+</article>
+</div>
+
+<footer>
+  <div class="wrap">
+    © 2026 Gitika Bose · <a href="../index.html">home</a>
+  </div>
+</footer>
+
+</body>
+</html>
