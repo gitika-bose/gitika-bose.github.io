@@ -286,6 +286,8 @@ article.blog p { margin: 14px 0; }
 article.blog strong { font-weight: 600; }
 
 article.blog ul { margin: 14px 0 14px 22px; }
+article.blog ol { margin: 14px 0 14px 22px; }
+article.blog ol li { padding-left: 4px; }
 article.blog li { margin: 8px 0; }
 article.blog li::marker { color: var(--accent); }
 
