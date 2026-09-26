@@ -27,7 +27,7 @@
 
   <p>So the interesting question isn't "simple or complex." It is: <strong>how do you know when you have earned the next level of complexity?</strong> This post is a practical answer, aimed at engineers building something real with LLMs without a background in the space, which, thanks to how good the tooling has got, is now a lot of the people shipping interesting things. I'm not the authority here. This is the order I work in, and what each step has cost me.</p>
 
-  <h2>Start at the floor, and make the floor real</h2>
+  <h2>Start simple, then look at what broke</h2>
 
   <p>Before the first prompt, write down what "correct" means for twenty specific inputs. Not a rubric, not a vibe. Twenty actual cases with the behaviour you'd accept for each. This takes an afternoon and it is the single highest-leverage thing in the whole project, because everything downstream is a comparison against it. If you can't say what correct looks like on twenty cases, no architecture is going to rescue you.</p>
 
@@ -59,77 +59,54 @@
 
   <p>The rule I try to hold myself to: <strong>move up a level when error analysis says one class of failure dominates, and that level is the cheapest thing that addresses it.</strong> Not before, and not two levels at once, because then you can't attribute the improvement to either.</p>
 
-  <p>A few of these deserve a note, because they're where people slip.</p>
+  <p>Three of these are worth a note, because they're where people slip.</p>
 
-  <p><strong>Level 2 is underrated and level 4 is overrated.</strong> An enormous amount of what people reach for an agent to do is really a missing piece of context, or a job a hundred lines of ordinary code can do perfectly. If the task is a lookup, a rule, a table join, a regex, or a schema validation, write the code. It's free, it's instant, it's identical on every run, and when it goes wrong you can point at the line that did it. Every job a deterministic component can carry is one less thing your evals have to be able to see.</p>
+  <p><strong>Level 2 is underrated.</strong> A lot of what people reach for a model to do is really a missing piece of context, or a job a hundred lines of ordinary code can do perfectly. If the task is a lookup, a rule, a regex, or a schema validation, write the code: it's free, it's identical on every run, and when it breaks you can point at the line that did it.</p>
 
-  <p><strong>The best reason to split a prompt is not capability.</strong> When people justify breaking one call into three, they usually say the model couldn't do it all at once. Often it could. The better reason is that different stages fail in different ways. A rewriting step fails by being <em>wrong</em>; a formatting step fails by being <em>malformed</em>. When those share a prompt, they trade off against each other invisibly. Split apart, with each stage's intermediate output persisted, a bad result tells you <em>which</em> stage broke it. The underrated reason to add a stage is observability, not capability.</p>
+  <p><strong>The best reason to split a prompt is not capability.</strong> People usually justify breaking one call into three by saying the model couldn't do it all at once. Often it could. The better reason is that stages fail differently, and when a rewriting step that fails by being <em>wrong</em> shares a prompt with a formatting step that fails by being <em>malformed</em>, the two trade off invisibly. Split apart, with each intermediate output saved, a bad result tells you <em>which</em> stage broke it. The real reason to add a stage is observability, not capability.</p>
 
-  <p><strong>Level 5 is not a free upgrade.</strong> Reasoning models are for problems where a wrong intermediate step ruins the answer: multi-step analysis, planning, hard code. For lookup, rewriting, classification, summarization and anything high-volume, a standard model usually wins on speed and price without losing accuracy. Thinking tokens run roughly 5–50× standard cost with real added latency, and the returns are front-loaded. The jump from no reasoning to some is steep; the climb from high to maximum effort is nearly flat. Treating a reasoning model as a strict upgrade is the expensive mistake.</p>
+  <p><strong>Level 5 is not a free upgrade.</strong> Reasoning models earn their cost when a wrong intermediate step ruins the answer: planning, multi-step analysis, hard code. For rewriting, classification, summarizing and anything high-volume, a standard model usually wins on speed and price without losing accuracy. The returns are front-loaded, so the jump from no reasoning to some is steep while high to maximum is nearly flat.</p>
 
   <h2>Where solutions actually land</h2>
 
-  <p>It's worth knowing what the plausible end states look like, because the discourse implies there's only one.</p>
+  <p>Worth knowing what the plausible end states look like, because the discourse implies there's only one.</p>
 
-  <p><strong>A single well-built call.</strong> One prompt with a few good examples and a fixed output schema, on a cheap fast model. Classification, extraction, rewriting, summarizing, tagging, routing: a good share of useful GenAI features are this and nothing more. If this is where you land, you have not failed to build something impressive. You have avoided paying for machinery you didn't need.</p>
+  <ul>
+    <li><strong>A single well-built call.</strong> One prompt, a few examples, a fixed schema, a cheap fast model. Classification, extraction, rewriting, tagging, routing: a good share of useful features are this and nothing more.</li>
+    <li><strong>A call wrapped in ordinary code.</strong> Deterministic work before it to assemble the right context, deterministic work after it to validate and to enforce what the model shouldn't be trusted with. This is where I land most often, and the shape hardest to find written up, because it isn't exciting.</li>
+    <li><strong>A short fixed chain.</strong> Two to four calls in a known order, each output inspectable. Predictable cost, predictable latency, and you always know where a failure happened.</li>
+    <li><strong>An actual agent loop.</strong> Right when the path genuinely varies per input and can't be known in advance. OpenAI's guide gives two honest triggers: your prompt has become spaghetti conditional logic, or it holds objectives that actively conflict. "It would be cool" is not one of them.</li>
+  </ul>
 
-  <p><strong>A call wrapped in ordinary code.</strong> Deterministic work before the call to assemble exactly the right context, and deterministic work after it to validate, normalize, or enforce rules the model shouldn't be trusted with. This is the shape I end up at most often, and the one that's hardest to find written up, because it isn't exciting. It is, however, usually the one that survives contact with production.</p>
-
-  <p><strong>A short fixed chain.</strong> Two to four calls in a known order, each doing one job, each output inspectable. Predictable cost, predictable latency, and you always know where a failure happened. Anthropic's framing is useful here: workflows give you predictability and consistency for well-defined tasks, agents give you flexibility and model-driven decisions at scale. If your task is well-defined, take the predictability.</p>
-
-  <p><strong>An actual agent loop.</strong> The right call when the path genuinely varies per input and can't be known in advance, and when the value of handling that variety absorbs the cost of non-determinism. OpenAI's guide gives two honest triggers for escalating: your prompt has turned into spaghetti conditional logic (<em>if X then Y, unless Z, then A…</em>), or you have objectives inside one prompt that actively conflict. Those are good signals. "It would be cool" is not.</p>
-
-  <p>And there's a fifth outcome nobody advertises: <strong>going back down.</strong> Some of the best changes I've made to LLM systems have been deleting a stage that worked. A component can function correctly and still not earn its keep. It costs latency, it costs money, it's one more thing that can drift, and it's one more thing your evals have to cover. If you can remove it and the numbers hold, remove it. Being willing to delete the thing you just built is most of the skill.</p>
-
-  <h2>You can't tell what helped without a ruler</h2>
-
-  <p>Everything above depends on being able to tell whether a change helped. This is where new builders get hurt most, and it's rarely because they skipped evaluation entirely. Usually they have a metric. The problem is that the metric can't see the thing they changed.</p>
-
-  <p>Here's a cheap technique that's worth running before you trust any metric: <strong>seed defects.</strong> Take a handful of outputs your system got right, and plant exactly one deliberate error in a copy of each, the kind of error that would actually hurt a user. Then check whether your metric notices.</p>
-
-  <p>I did this on a text-simplification system that scored its own output for readability, and the result was uncomfortable. Across two dozen deliberately broken variants (altered numbers, invented facts, a dropped instruction, a softened warning) the readability score never moved more than five points in either direction. One whole class of defect <em>raised</em> it, because invented content tends to be short and plain and easy to read. The score wasn't broken. It was measuring readability faithfully, and being wrong is not the same as being hard to read.</p>
-
-  <p>What caught them was dull, deterministic checking: does every number in the output trace back to the source, does the thing that was supposed to survive actually appear, is the text that should never appear absent. No model involved. That found about seventy percent of the planted defects. It also found, on the untouched outputs, one real defect nobody had planted.</p>
-
-  <p>Three lessons came out of it.</p>
-
-  <p><strong>The ruler has to be able to see the change.</strong> If you add a stage to fix fabricated content and your only metric is readability, you have no idea whether it worked. You will keep the stage anyway, because you built it and removing it feels irresponsible. That is exactly how systems accumulate machinery nobody can justify.</p>
-
-  <p><strong>Grade in tiers, cheapest first.</strong> Deterministic checks wherever the contract is genuinely checkable, an LLM judge only for what code cannot check, humans to calibrate the judge. The same discipline applies to your evals as to your pipeline: an LLM judge is a level-4 decision for your eval layer, and it has to be earned the same way. It also has to be validated. A judge is only trustworthy once it agrees with human labels often enough, and it needs re-checking whenever its prompt or model changes.</p>
-
-  <p><strong>For anything a person will act on, the metric is pass^k, not pass@k.</strong> Run every case several times and count it as passing only if <em>every</em> run passes. LLMs are non-deterministic; a feature that's right four times out of five is not right, and a single-run eval will happily hide that from you.</p>
+  <p>And a fifth nobody advertises: <strong>going back down.</strong> Some of the best changes I've made have been deleting a stage that worked. A component can function correctly and still not earn its keep, because it costs latency and money, it can drift, and your evals have to cover it. If you can remove it and the numbers hold, remove it.</p>
 
   <h2>The cost of complexity you didn't need</h2>
 
-  <p>Every stage, rule and heuristic you add is a parameter you have fit to the cases you happen to have seen. Enough of them and you have built something exquisitely tuned to your twenty examples and nothing else. This is the real cost of overbuilding, and it's invisible until you ship.</p>
+  <p>Every stage and rule you add is a parameter fit to the cases you happen to have seen. Enough of them and you've built something tuned to your twenty examples and nothing else, which stays invisible until you ship.</p>
 
-  <p>The defence is boring and it works: keep a holdout. Iterate freely against a dev set, seal off a slice (20% is a reasonable default) and look at it only when you ship. If the dev score is 90 and the holdout is 70, your prompt has memorized your dev cases rather than solved the task. Put another way: run forty experiments against one eval set and you will find an improvement that isn't there, because the number that survives forty comparisons is the maximum of forty noisy measurements, and the maximum of noisy measurements flatters you.</p>
+  <p>The defence is boring and it works: iterate against a dev set, seal off a slice (20% is a reasonable default), and look at it only when you ship. If dev says 90 and the holdout says 70, your prompt memorized your dev cases instead of solving the task. Run forty experiments against one eval set and you'll find an improvement that isn't there, because the number surviving forty comparisons is the maximum of forty noisy measurements, and that flatters you.</p>
 
-  <p>There's a subtler version of this that surprised me. When I've gone back to examine why a check failed to catch something, the bug has usually been in the <em>specification</em>, not the pipeline: a threshold set too leniently to ever trigger, or a rule matching against the whole output so that a deletion in one section hid behind the same words appearing in another. If two careful readers disagree about whether an output passed, that's a bug in your task definition, not in the model. Fix the spec before you touch the prompt, otherwise you'll tune a perfectly good system against a broken ruler.</p>
+  <p>Worth knowing too: when a check fails to catch something, the bug is usually in the <em>spec</em> rather than the pipeline. If two careful readers disagree about whether an output passed, fix the task definition before you touch the prompt, or you will tune a good system against a broken test.</p>
 
   <h2>If you're starting this week</h2>
 
   <ol>
-    <li>Write down twenty real inputs and what a correct output looks like for each. Do this <em>before</em> you write a prompt.</li>
-    <li>Build the simplest version: one prompt, one call, cheapest capable model. Run all twenty. Read every output.</li>
-    <li>Label what went wrong and count the categories. The biggest category is your next piece of work.</li>
-    <li>Fix that one category with the cheapest thing that could fix it. Deterministic code before a model call; a prompt change before a new stage; a new stage before an agent loop.</li>
+    <li>Write down twenty real inputs and what a correct output looks like for each, <em>before</em> you write a prompt.</li>
+    <li>Build the simplest version: one prompt, one call, cheapest capable model. Run all twenty and read every output.</li>
+    <li>Label what went wrong and count the categories. The biggest one is your next piece of work.</li>
+    <li>Fix it with the cheapest thing that could: deterministic code before a model call, a prompt change before a new stage, a new stage before an agent loop.</li>
     <li>Re-run. Did that category shrink without others growing? If not, take the change back out.</li>
-    <li>Seed a few defects into known-good outputs and confirm your metric can actually see them. If it can't, fix the metric before you build anything else.</li>
+    <li>Seed a few defects into known-good outputs and confirm your metric sees them. If it can't, fix the metric first.</li>
     <li>Before you ship, run the holdout you haven't looked at.</li>
   </ol>
 
-  <p>None of this is an argument against agents. Agentic systems are the right call when the path genuinely varies per input and the value of getting it right absorbs the cost of non-determinism. It is an argument for being able to say <em>why</em> you built one, and for knowing what the simpler version scored.</p>
-
-  <p>If you're new to this space, that last part is the whole edge. The tooling has got good enough that building the complicated version is no longer the hard bit. Knowing whether you needed it is.</p>
-
-  <h2>What I'd like to know</h2>
+  <p>None of this is an argument against agents. They're the right call when the path genuinely varies and the value of handling it absorbs the cost of non-determinism. It's an argument for being able to say <em>why</em> you built one, and for knowing what the simpler version scored. The tooling has got good enough that building the complicated version is no longer the hard bit. Knowing whether you needed it is.</p>
 
   <p>I'd genuinely like to hear where other people stopped adding complexity, what made them add the next piece, and what they later took back out. That last one is the answer I learn the most from and see written down the least.</p>
 
   <hr class="divider">
 
-  <p class="footnote"><em>Sources and further reading: Anthropic, <a href="https://www.anthropic.com/engineering/building-effective-agents">"Building Effective AI Agents"</a> and <a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents">"Demystifying Evals for AI Agents"</a>; OpenAI, <a href="https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/">"A Practical Guide to Building Agents"</a>; Hamel Husain on error analysis and reading your traces, <a href="https://hamel.dev/">hamel.dev</a>. The seeded-defect figures are from a small experiment of my own, written up in more detail <a href="./evals-and-domain-expertise.html">here</a>.</em></p>
+  <p class="footnote"><em>Sources and further reading: Anthropic, <a href="https://www.anthropic.com/engineering/building-effective-agents">"Building Effective AI Agents"</a> and <a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents">"Demystifying Evals for AI Agents"</a>; OpenAI, <a href="https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents/">"A Practical Guide to Building Agents"</a>; Hamel Husain on error analysis and reading your traces, <a href="https://hamel.dev/">hamel.dev</a>. On checking whether your metrics can see the failures that matter, I wrote up a seeded-defect experiment of my own <a href="./evals-and-domain-expertise.html">here</a>.</em></p>
 
 </article>
 </div>
